@@ -6,6 +6,8 @@ python-multipart
 sqlalchemy
 asyncpg
 mangum
-python-decouple
+
 aiosqlite
+python-jose[cryptography]
+passlib[bcrypt]
 #End Requirements
