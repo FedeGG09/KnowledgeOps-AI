@@ -1,0 +1,11 @@
+.font-size-3vw {
+  font-size: 3vw; /* Ajusta el tamaño de fuente al 3% del ancho del viewport */
+}
+
+.font-size-2vw {
+  font-size: 2vw; /* Ajusta el tamaño de fuente al 2% del ancho del viewport */
+}
+
+.font-size-1vw {
+  font-size: 1vw; /* Ajusta el tamaño de fuente al 1% del ancho del viewport */
+}
