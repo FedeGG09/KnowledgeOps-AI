@@ -6,4 +6,5 @@ python-multipart
 sqlalchemy
 asyncpg
 mangum
+python-decouple
 #End Requirements
