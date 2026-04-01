@@ -7,4 +7,5 @@ sqlalchemy
 asyncpg
 mangum
 python-decouple
+aiosqlite
 #End Requirements
