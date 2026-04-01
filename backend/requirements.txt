@@ -1,13 +1,16 @@
 fastapi
 uvicorn
 langchain
+langchain-community
 pypdf
 python-multipart
 sqlalchemy
 asyncpg
+aiosqlite
 mangum
 python-decouple
-aiosqlite
-python-jose[cryptography]
-passlib[bcrypt]
+python-jose
+passlib
+bcrypt
+cryptography
 #End Requirements
