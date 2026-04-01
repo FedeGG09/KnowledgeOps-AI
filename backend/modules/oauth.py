@@ -1,37 +1,73 @@
-# fastapi
-from fastapi import Depends,  HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from fastapi.encoders import jsonable_encoder
-# db
-from sqlalchemy.ext.asyncio import AsyncSession
-# datetime
-from datetime import datetime, timedelta
-from datetime import datetime, timedelta
-# jwt
-from jose import JWTError, jwt
-# others
-from decouple import config
-import bcrypt
+# modules/oauth.py
+from __future__ import annotations
 
+import os
+import bcrypt
+from datetime import datetime, timedelta
+from typing import Any, Dict, Optional
+
+from fastapi import Depends, HTTPException, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+# =========================
+# AUTH CONFIG
+# =========================
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = os.getenv(
+    "SECRET_KEY",
+    "knowledgeops_ai_portfolio_demo_secret_2026"
+)
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 300
 
 
-def verify_password(hash_password: str, password: str):
-    return bcrypt.checkpw(password.encode('utf8'), hash_password.encode('utf8'))
+# =========================
+# AUTH HELPERS
+# =========================
+def verify_password(hash_password: str, password: str) -> bool:
+    """
+    Verifica password plana contra hash bcrypt almacenado.
+    """
+    try:
+        return bcrypt.checkpw(
+            password.encode("utf-8"),
+            hash_password.encode("utf-8")
+        )
+    except Exception:
+        return False
 
 
-def create_access_token(data: dict, expiration_date: datetime):
+def create_access_token(
+    data: Dict[str, Any],
+    expires_delta: Optional[timedelta] = None
+) -> str:
+    """
+    Genera JWT firmado.
+    """
     to_encode = data.copy()
 
-    to_encode.update({"exp": expiration_date})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    expire = datetime.utcnow() + (
+        expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+
+    to_encode.update({"exp": expire})
+
+    return jwt.encode(
+        to_encode,
+        SECRET_KEY,
+        algorithm=ALGORITHM
+    )
 
 
+# =========================
+# EXCEPTION
+# =========================
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="Could not validate credentials",
@@ -39,40 +75,49 @@ credentials_exception = HTTPException(
 )
 
 
+# =========================
+# CURRENT USER
+# =========================
 async def get_current_user(
     db: AsyncSession,
     token: str = Depends(oauth2_scheme)
 ):
-    
     """
-    Funcionamiento:
-    ---------------
-    Decodificar el JWT y obtener los datos del usuario para verificarlo en una base de datos y encontrarlo
-    En caso de no existir retorna raise Error y bloquea el acceso
+    Decodifica JWT y valida usuario activo/verificado.
     """
     try:
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
 
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("id")
+        email = payload.get("email")
 
-        id: str = payload.get("id")
-        email: str = payload.get("email")
-
-        if email is None:
+        if not user_id or not email:
             raise credentials_exception
 
     except JWTError:
         raise credentials_exception
 
-    user = await db.execute("SELECT * FROM users WHERE id = :id AND email = :email AND verified_account = true ", {"id":id, "email": email})
-    
-    user = user.one_or_none()
+    query = text("""
+        SELECT *
+        FROM users
+        WHERE id = :id
+          AND email = :email
+          AND verified_account = true
+        LIMIT 1
+    """)
 
-    if user:
+    result = await db.execute(
+        query,
+        {"id": user_id, "email": email}
+    )
 
-        user = jsonable_encoder(user)
+    user = result.one_or_none()
 
-        return user
+    if not user:
+        raise credentials_exception
 
-    else:
-
-        return False
+    return jsonable_encoder(user)
