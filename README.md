@@ -12,7 +12,7 @@ This solution was designed as a **production-style showcase project** to demonst
 ## 🌍 Live Demo
 
 * **Frontend Demo:** `https://your-demo.pages.dev`
-* **Backend API Docs:** `https://your-backend.onrender.com/docs`
+* **Backend API Docs:** `[https://your-backend.onrender.com/docs](https://knowledgeops-ai.onrender.com/)`
 * **GitHub Repository:** `https://github.com/your-user/documind-ai-enterprise`
 
 ---
