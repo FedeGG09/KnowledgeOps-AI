@@ -101,3 +101,4 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
         status_code=404,
         detail="Usuario o Contraseña incorrectos",
     )
+# demo login v2
