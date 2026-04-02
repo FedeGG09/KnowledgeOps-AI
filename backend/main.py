@@ -21,9 +21,11 @@ from routes.rolesService import routerRoles
 from routes.fileService import routerFiles
 from routes.signupService import sign_up
 from routes.pwdRecoveryService import routerPwdRecovery
-from sqlalchemy import text
 from modules.auth.password_manager import hash_password
 
+# =========================================================
+# DEMO USER SEED
+# =========================================================
 async def seed_demo_user():
     demo_email = "demo@knowledgeops.ai"
     demo_password = "Knowledge123!"
@@ -76,10 +78,6 @@ logger = logging.getLogger(__name__)
 # DATABASE HELPERS
 # =========================================================
 async def wait_for_database(max_retries: int = 30, delay_seconds: int = 2) -> None:
-    """
-    Espera a que la base de datos esté disponible antes de levantar la app.
-    Ideal para Docker / Render / Railway.
-    """
     last_error = None
 
     for attempt in range(1, max_retries + 1):
@@ -101,39 +99,30 @@ async def wait_for_database(max_retries: int = 30, delay_seconds: int = 2) -> No
 
 
 async def init_models() -> None:
-    """
-    Crea las tablas automáticamente si no existen.
-    """
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     logger.info("✅ Database schema initialized.")
-
 
 # =========================================================
 # APP LIFECYCLE
 # =========================================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Lifecycle moderno de FastAPI (startup + shutdown).
-    Más enterprise que @app.on_event.
-    """
     logger.info("🚀 Starting application...")
 
-    if DEMO_MODE:
-        logger.info("🎯 Running in DEMO MODE → database disabled.")
-    else:
-        await wait_for_database()
-        await init_models()
+    await wait_for_database()
+    await init_models()
+
+    # 🔥 ACA ESTABA EL BUG
+    await seed_demo_user()
+
+    logger.info("✅ Demo user ready.")
 
     yield
 
-    if not DEMO_MODE:
-        await engine.dispose()
-
+    await engine.dispose()
     logger.info("🛑 Application shutdown complete.")
-
 
 # =========================================================
 # FASTAPI APP
@@ -145,7 +134,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# AWS Lambda / Cloud adapters
 handler = Mangum(app)
 
 # =========================================================
@@ -157,11 +145,12 @@ origins = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
     "https://llm.analyticstown.com",
+    "https://knowledgeops-ai-web.pages.dev",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins if not DEMO_MODE else ["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -185,7 +174,6 @@ async def read_root():
     return {
         "message": "🚀 KnowledgeOps AI API running",
         "version": APP_VERSION,
-        "demo_mode": DEMO_MODE,
     }
 
 
@@ -195,18 +183,11 @@ async def health():
         "status": "ok",
         "app": APP_TITLE,
         "version": APP_VERSION,
-        "demo_mode": DEMO_MODE,
     }
 
 
 @app.get("/health/db", tags=["System"])
 async def health_db():
-    if DEMO_MODE:
-        return {
-            "status": "ok",
-            "database": "disabled (demo mode)",
-        }
-
     try:
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
@@ -222,7 +203,6 @@ async def health_db():
             "database": "down",
             "detail": str(exc),
         }
-
 
 # =========================================================
 # LOCAL DEV ENTRYPOINT
