@@ -21,6 +21,35 @@ from routes.rolesService import routerRoles
 from routes.fileService import routerFiles
 from routes.signupService import sign_up
 from routes.pwdRecoveryService import routerPwdRecovery
+from sqlalchemy import text
+from modules.auth.password_manager import hash_password
+
+async def seed_demo_user():
+    demo_email = "demo@knowledgeops.ai"
+    demo_password = "Knowledge123!"
+
+    async with engine.begin() as conn:
+        result = await conn.execute(
+            text("SELECT id FROM users WHERE email = :email"),
+            {"email": demo_email},
+        )
+        exists = result.first()
+
+        if exists:
+            return
+
+        await conn.execute(
+            text("""
+                INSERT INTO users (name, lastname, email, password, verified_account)
+                VALUES (:name, :lastname, :email, :password, true)
+            """),
+            {
+                "name": "Demo",
+                "lastname": "User",
+                "email": demo_email,
+                "password": hash_password(demo_password),
+            },
+        )
 
 # =========================================================
 # APP CONFIG
