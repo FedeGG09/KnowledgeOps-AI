@@ -11,11 +11,14 @@ This solution was designed as a **production-style showcase project** to demonst
 
 ## 🌍 Live Demo
 
-* **Frontend Demo:** `https://your-demo.pages.dev`
+* **Frontend Demo:** `https://your-demo.pages.dev](https://dossieros.lovable.app/`
 * **Backend API Docs:** `https://knowledgeops-ai.onrender.com/`
 * **GitHub Repository:** `https://github.com/your-user/documind-ai-enterprise`
 
 ---
+
+<img width="1296" height="908" alt="image" src="https://github.com/user-attachments/assets/f809d7d2-bbe2-4402-a2c4-6872c74bf760" />
+
 
 ## 💼 Professional Value
 
